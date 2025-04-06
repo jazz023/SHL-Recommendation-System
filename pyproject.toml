@@ -2,7 +2,7 @@
 name = "shl-rag"
 version = "0.1.0"
 description = ""
-authors = ["Dopamine-Max <sainathvia789123@gmail.com>"]
+authors = ["jazz023 <jashikasethi06@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
