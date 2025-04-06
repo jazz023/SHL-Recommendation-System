@@ -6,8 +6,8 @@ import re
 from url_handler import get_job
 
 # App Configuration
-API_ENDPOINT = "http://localhost:8000/recommend"
-PROJECT_LINK = "https://github.com/yourusername/shl-recommender"
+API_ENDPOINT = "https://shl-recommendation-system-fpr1.onrender.com/recommend"
+PROJECT_LINK = "https://github.com/jazz023/SHL-Recommendation-System"
 
 # Dark Theme with SHL Logo Complementary Colors
 st.markdown("""
@@ -107,7 +107,7 @@ def main():
     col1, col2 = st.columns([1,6])
     with col1:
         st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-        st.image("shl-logo.png", width=80)
+        st.image("app/shl-logo.png", width=80)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown(
