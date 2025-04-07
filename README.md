@@ -1,3 +1,6 @@
+PROBLEM STATEMENT
+To develop an AI-powered tool to recommend SHL assessments based on job descriptions, providing structured, relevant assessment matches in user friendly tabular formats.
+
 API Endpoint: https://shl-recommendation-system-fpr1.onrender.com/recommend
 
 Arhictecture Diagram:
