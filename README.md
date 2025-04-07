@@ -1,5 +1,8 @@
 PROBLEM STATEMENT:
-To develop an AI-powered tool to recommend SHL assessments based on job descriptions, providing structured, relevant assessment matches in user friendly tabular formats.
+Hiring managers often struggle to find the right assessments for the roles that they are hiring for. The current
+system relies on keyword searches and filters, making the process time-consuming and inefficient. Your task
+is to build an intelligent recommendation system that simplifies this process. Given a natural language
+query or a job description text or URL, your application should return a list of relevant SHL assessments.
 
 API Endpoint: https://shl-recommendation-system-fpr1.onrender.com/recommend
 
