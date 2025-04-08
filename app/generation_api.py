@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from groq import Groq
 from config import GROQ_API_KEY
 from retrieval import retrieve_from_qdrant
+from fastapi.responses import JSONResponse
+import json
 
 app = FastAPI()
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -126,7 +128,7 @@ async def recommend(request: RecommendationRequest):
         print("Ranking failed:", str(e))
         ranked = []
     
-    return {
+    response_data = {
         "recommended_assessments": [{
             "url": c["url"],
             "adaptive_support": c["adaptive_support"],
@@ -136,3 +138,8 @@ async def recommend(request: RecommendationRequest):
             "test_type": [ct.strip() for ct in c["test_type"].split(",")] 
         } for c in ranked[:10]]
     }
+    return JSONResponse(
+        content=response_data,
+        status_code=200,
+        dumps=lambda x: json.dumps(x, indent=4, ensure_ascii=False)
+    )
