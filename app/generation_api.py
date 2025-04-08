@@ -15,6 +15,15 @@ class RecommendationRequest(BaseModel):
     max_duration: int = None
     test_type: str = None
 
+class IndentedJSONResponse(JSONResponse):
+    def render(self, content: any) -> bytes:
+        return json.dumps(
+            content,
+            indent=4,
+            ensure_ascii=False,
+            default=str
+        ).encode("utf-8")
+    
 def llm_rerank(query: str, candidates: list) -> list:
     
     messages = [{
@@ -111,7 +120,7 @@ def parse_duration(duration) -> int | None:
 async def health_check():
     return {"status": "healthy"}
 
-@app.post("/recommend")
+@app.post("/recommend", response_class=IndentedJSONResponse)
 async def recommend(request: RecommendationRequest):
     # Get initial candidates
     candidates = retrieve_from_qdrant(request.query, top_k=30)
@@ -128,7 +137,7 @@ async def recommend(request: RecommendationRequest):
         print("Ranking failed:", str(e))
         ranked = []
     
-    response_data = {
+    return {
         "recommended_assessments": [{
             "url": c["url"],
             "adaptive_support": c["adaptive_support"],
@@ -138,8 +147,3 @@ async def recommend(request: RecommendationRequest):
             "test_type": [ct.strip() for ct in c["test_type"].split(",")] 
         } for c in ranked[:10]]
     }
-    return JSONResponse(
-        content=response_data,
-        status_code=200,
-        dumps=lambda x: json.dumps(x, indent=4, ensure_ascii=False)
-    )
