@@ -84,7 +84,7 @@ def is_url(input_str):
 
 @st.cache_data
 def load_name_mapping():
-    df = pd.read_csv("data/shl_product_details.csv")
+    df = pd.read_csv("app/data/shl_product_details.csv")
     return pd.Series(df.Name.values, index=df.URL.str.strip()).to_dict()
 
 def main():
@@ -115,7 +115,7 @@ def main():
     col1, col2 = st.columns([1,6])
     with col1:
         st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-        st.image("data/shl-logo.png", width=80)
+        st.image("app/data/shl-logo.png", width=80)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown(
@@ -184,7 +184,7 @@ def main():
                 )
             
             if response.status_code == 200:
-                recommendations = response.json()['recommendations_assessments']
+                recommendations = response.json()['recommended_assessments']
                 
                 # Add bot response
                 st.session_state.conversation.append({
@@ -214,22 +214,20 @@ def main():
                 # Create styled dataframe
                 try:
                     
-                    data = msg['content']['recommendations_assessments']
+                    data = msg['content']
                         
                     # Create DataFrame with proper column handling
-                    df = pd.DataFrame(data)
-                    
-                    # Get name mapping through URL
-                    df = pd.DataFrame(data).assign(
-                        name=lambda x: x['url'].map(url_to_name).fillna("Name Not Available")
-                    )
-                    
-                    # Select columns safely
-                    available_columns = ['name'] + [col for col in ['duration', 'test_type', 
-                                        'remote_support', 'adaptive_support', 'url'] 
-                                        if col in df.columns]
-                    
-                    df = df[available_columns]
+                    df = pd.DataFrame([{
+                        "name": url_to_name.get(item.get('url', ''), "Unknown Assessment"),
+                        "duration": int(item.get('duration') or 0),
+                        "test_type": ", ".join(
+                            item.get('test_type', []) if isinstance(item.get('test_type', []), list)
+                            else item.get('test_type', '').split(', ')
+                        ),
+                        "remote_support": item.get('remote_support', 'No'),
+                        "adaptive_support": item.get('adaptive_support', 'No'),
+                        "url": item.get('url', '')
+                    } for item in data if isinstance(item, dict)])
                     
                     # Display table with 1-based index
                     df.index = df.index + 1  # Start from 1 instead of 0
