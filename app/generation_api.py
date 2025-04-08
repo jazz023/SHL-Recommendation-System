@@ -97,6 +97,17 @@ def llm_rerank(query: str, candidates: list) -> list:
     except Exception as e:
         print(f"LLM Error: {str(e)}")
         return candidates[:10]  # Fallback mechanism
+    
+def parse_duration(duration) -> int | None:
+    try:
+        # Direct integer conversion
+        return int(duration)
+    except (TypeError, ValueError):
+        return None
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 @app.post("/recommend")
 async def recommend(request: RecommendationRequest):
@@ -116,12 +127,12 @@ async def recommend(request: RecommendationRequest):
         ranked = []
     
     return {
-        "recommendations": [{
-            "name": c["name"],
+        "recommended_assessments": [{
             "url": c["url"],
-            "duration": f"{c['duration']} mins",
-            "test_type": c["test_type"],
-            "remote_supported": c["remote_testing"],
-            "adaptive_support": c["adaptive_support"]
+            "adaptive_support": c["adaptive_support"],
+            "description": c["description"],
+            "duration": parse_duration(c.get('duration')),
+            "remote_support": c["remote_testing"],
+            "test_type": [ct.strip() for ct in c["test_type"].split(",")] 
         } for c in ranked[:10]]
     }

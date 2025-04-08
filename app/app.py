@@ -82,6 +82,11 @@ def is_url(input_str):
     url_pattern = r'^https?://\S+'
     return re.match(url_pattern, input_str) is not None
 
+@st.cache_data
+def load_name_mapping():
+    df = pd.read_csv("data/shl_product_details.csv")
+    return pd.Series(df.Name.values, index=df.URL.str.strip()).to_dict()
+
 def main():
     st.markdown("""
         <style>
@@ -103,11 +108,14 @@ def main():
             }
         </style>
         """, unsafe_allow_html=True)
+    
+    url_to_name = load_name_mapping()
+    
     # Header with light box for logo
     col1, col2 = st.columns([1,6])
     with col1:
         st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-        st.image("app/shl-logo.png", width=80)
+        st.image("shl-logo.png", width=80)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown(
@@ -176,7 +184,7 @@ def main():
                 )
             
             if response.status_code == 200:
-                recommendations = response.json()['recommendations']
+                recommendations = response.json()['recommendations_assessments']
                 
                 # Add bot response
                 st.session_state.conversation.append({
@@ -205,22 +213,21 @@ def main():
                 
                 # Create styled dataframe
                 try:
-                    # Check if 'content' contains recommendations list or is the list itself
-                    if isinstance(msg['content'], list):
-                        data = msg['content']
-                    elif isinstance(msg['content'], dict) and 'recommendations' in msg['content']:
-                        data = msg['content']['recommendations']
-                    else:
-                        st.error("Unexpected response format")
-                        st.json(msg['content'])
-                        return
+                    
+                    data = msg['content']['recommendations_assessments']
                         
                     # Create DataFrame with proper column handling
                     df = pd.DataFrame(data)
                     
+                    # Get name mapping through URL
+                    df = pd.DataFrame(data).assign(
+                        name=lambda x: x['url'].map(url_to_name).fillna("Name Not Available")
+                    )
+                    
                     # Select columns safely
-                    available_columns = [col for col in ['name', 'duration', 'test_type', 
-                                        'remote_supported', 'adaptive_support', 'url'] if col in df.columns]
+                    available_columns = ['name'] + [col for col in ['duration', 'test_type', 
+                                        'remote_support', 'adaptive_support', 'url'] 
+                                        if col in df.columns]
                     
                     df = df[available_columns]
                     
@@ -230,8 +237,8 @@ def main():
                     st.dataframe(
                         df.style
                         .set_properties(**{'color': '#E0E0E0', 'background-color': '#2D2D2D'})
-                        .map(lambda x: 'color: #7CCD32; font-weight: 500' if str(x).lower() == 'yes' else '', 
-                                subset=['remote_supported','adaptive_support']),
+                        .map(lambda x: 'color: #7CCD32; font-weight: 500' if str(x) == 'Yes' else '', 
+                                subset=['remote_support','adaptive_support']),
                         use_container_width=True,   
                         height=400,
                         column_config={

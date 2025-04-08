@@ -7,6 +7,7 @@ import pandas as pd
 #Intialize Qdrant client
 qdrant_client = QdrantClient(
     url=QDRANT_URL,
+    prefer_grpc=True,
     api_key=QDRANT_API_KEY
 )
 
@@ -60,7 +61,7 @@ def store_embeddings(csv_path: str, collection_name: str = "rag_embeddings"):
             "name": row["Name"],
             "url": row["URL"],
             "description": row["Description"],
-            "remote_testing": row["Remote Testing"].lower(),
+            "remote_testing": row["Remote Testing"],
             "adaptive_support": row["Adaptive/IRT Support"],
             "duration": row["Duration"].split("=")[-1].strip() if row["Duration"] else "",
             "test_type": row["Test Type"]
