@@ -18,10 +18,13 @@ KEY HIGHLIGHTS:
 - Instant JSON export  
 - Dual input methods (text/URL).
 
-METHODOLOGY:
-![alt text](image.png)
-
 API Endpoint: https://shl-recommendation-system-fpr1.onrender.com
 
 System Arhictecture Diagram:
 ![alt text](image-1.png)
+
+Live Demo:
+
+https://github.com/user-attachments/assets/9fb41427-2eb3-4d69-9669-781ec8a51c78
+
+
