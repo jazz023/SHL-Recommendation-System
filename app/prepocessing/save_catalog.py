@@ -1,21 +1,18 @@
 from qdrant_client import QdrantClient, models
-from llama_index.embeddings.ollama import OllamaEmbedding
-from app.config import QDRANT_URL, QDRANT_API_KEY, OLLAMA_BASE_URL
+import google.generativeai as genai
+from config import QDRANT_URL, QDRANT_API_KEY, GEMINI_API_KEY
 import uuid
 import pandas as pd
 
 #Intialize Qdrant client
 qdrant_client = QdrantClient(
     url=QDRANT_URL,
-    prefer_grpc=True,
+    # prefer_grpc=True,
     api_key=QDRANT_API_KEY
 )
 
 # Initialize embedding model here
-embed_model = OllamaEmbedding(  
-    model_name="nomic-embed-text",
-    base_url=OLLAMA_BASE_URL
-)
+genai.configure(api_key=GEMINI_API_KEY)
 
 def initialize_vector_store():
     
@@ -27,7 +24,7 @@ def initialize_vector_store():
             qdrant_client.create_collection(
                 collection_name="rag_embeddings",
                 vectors_config=models.VectorParams(
-                    size=768,  # Dimension for nomic-embed-text
+                    size=768,  # Dimension for embedding model
                     distance=models.Distance.COSINE
                 )
             )
@@ -49,12 +46,16 @@ def store_embeddings(csv_path: str, collection_name: str = "rag_embeddings"):
         # Generate embedding
         embedding_text = \
         f"""
+            Name: {row['Name']}
+            {row['Description']}
             Duration: {row['Duration']} minutes
             Test type: {row['Test Type']}
-            Supported features- Remote-Testing:{row['Remote Testing']}, Adaptive/IRT-Support:{row['Adaptive/IRT Support']}
-            {row['Description']}
         """
-        embedding = embed_model.get_text_embedding(embedding_text)
+        embedding = genai.embed_content(
+            model="models/text-embedding-004",
+            content=embedding_text,
+            task_type="retrieval_query"
+        )['embedding']
         
         # Create payload with data
         payload = {
@@ -86,5 +87,5 @@ def store_embeddings(csv_path: str, collection_name: str = "rag_embeddings"):
 initialize_vector_store()
 
 # Store embeddings from CSV
-csv_path = "data/shl_product_details.csv"  # Path to your CSV file
+csv_path = "app/data/shl_product_details.csv"  # Path to your CSV file
 store_embeddings(csv_path)

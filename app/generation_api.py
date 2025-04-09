@@ -1,5 +1,5 @@
 import re
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from pydantic import BaseModel
 from groq import Groq
 from config import GROQ_API_KEY
@@ -14,16 +14,16 @@ class RecommendationRequest(BaseModel):
     query: str
     max_duration: int = None
     test_type: str = None
-
+    
 class IndentedJSONResponse(JSONResponse):
     def render(self, content: any) -> bytes:
         return json.dumps(
             content,
             indent=4,
             ensure_ascii=False,
-            default=str
+            default=str  # Handle non-serializable types
         ).encode("utf-8")
-    
+
 def llm_rerank(query: str, candidates: list) -> list:
     
     messages = [{
@@ -98,9 +98,6 @@ def llm_rerank(query: str, candidates: list) -> list:
                     ranked.append(candidate)
                     break
         
-        # Fallback to original candidates if empty
-        if not ranked:
-            return candidates[:10]
             
         # Ensure exactly 10 items
         return (ranked + [c for c in candidates if c not in ranked])[:10]
@@ -114,36 +111,63 @@ def parse_duration(duration) -> int | None:
         # Direct integer conversion
         return int(duration)
     except (TypeError, ValueError):
-        return None
+        # Extract first numeric sequence from strings
+        if match := re.search(r'\d+', str(duration)):
+            return int(match.group())
+    return None
+
+@app.get("/", response_class=IndentedJSONResponse)
+async def root():
+    return {
+        "message": "SHL Assessment Recommender API is running",
+        "endpoints": [
+            {"path": "/health", "method": "GET", 
+             "description": "Health check endpoint"},
+            {"path": "/recommend", "method": "POST", 
+             "description": "Get assessment recommendations based on a Natural Language query"}
+        ],
+        "version": "1.0.0"
+    }
+
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return JSONResponse(
+        content={"status": "healthy"},
+        status_code=200,
+        media_type="application/json"
+    )
 
-@app.post("/recommend", response_class=IndentedJSONResponse)
+@app.post("/recommend")
 async def recommend(request: RecommendationRequest):
-    # Get initial candidates
-    candidates = retrieve_from_qdrant(request.query, top_k=30)
-
-    # Apply hard filters
-    if request.max_duration:
-        candidates = [c for c in candidates 
-                     if int(c.get('duration', 0)) <= request.max_duration]
-    
-    # LLM Re-ranking
     try:
+        candidates = retrieve_from_qdrant(request.query, top_k=20)
+        
+        # Apply filters
+        if request.max_duration:    
+            candidates = [c for c in candidates 
+                         if int(c.get('duration', 0)) <= request.max_duration]
+
+        # LLM reranking
         ranked = llm_rerank(request.query, candidates)
+        
+        return JSONResponse(
+            content={
+                "recommended_assessments": [{
+                    "url": c["url"],
+                    "adaptive_support": c["adaptive_support"],
+                    "description": c["description"],
+                    "duration": parse_duration(c.get('duration')),
+                    "remote_support": c["remote_testing"],
+                    "test_type": [ct.strip() for ct in c["test_type"].split(",")]
+                } for c in ranked[:10]]
+            },
+            status_code=status.HTTP_200_OK,
+            media_type="application/json"
+        )
+        
     except Exception as e:
-        print("Ranking failed:", str(e))
-        ranked = []
-    
-    return {
-        "recommended_assessments": [{
-            "url": c["url"],
-            "adaptive_support": c["adaptive_support"],
-            "description": c["description"],
-            "duration": parse_duration(c.get('duration')),
-            "remote_support": c["remote_testing"],
-            "test_type": [ct.strip() for ct in c["test_type"].split(",")] 
-        } for c in ranked[:10]]
-    }
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

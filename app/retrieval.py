@@ -19,7 +19,7 @@ def retrieve_from_qdrant(query: str, top_k: int = 30):
     try:
         # Single embedding
         query_embedding = genai.embed_content(
-            model="models/embedding-001",
+            model="models/text-embedding-004",
             content=query,
             task_type="retrieval_query"
         )['embedding']  # Use singular key
