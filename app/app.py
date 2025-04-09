@@ -5,7 +5,7 @@ import pandas as pd
 from url_handler import is_url, extract_url, get_job
 
 # App Configuration
-API_ENDPOINT = "https://shl-recommendation-system-fpr1.onrender.com"
+API_ENDPOINT = "https://shl-recommendation-system-fpr1.onrender.com/recommend"
 PROJECT_LINK = "https://github.com/jazz023/SHL-Recommendation-System"
 
 # Dark Theme with SHL Logo Complementary Colors
