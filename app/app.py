@@ -2,11 +2,10 @@ import streamlit as st
 from streamlit_chat import message
 import requests
 import pandas as pd
-import re
-from url_handler import get_job
+from url_handler import is_url, extract_url, get_job
 
 # App Configuration
-API_ENDPOINT = "https://shl-recommendation-system-fpr1.onrender.com/recommend"
+API_ENDPOINT = "https://shl-recommendation-system-fpr1.onrender.com"
 PROJECT_LINK = "https://github.com/jazz023/SHL-Recommendation-System"
 
 # Dark Theme with SHL Logo Complementary Colors
@@ -27,7 +26,7 @@ st.markdown("""
     }
     
     /* Green Accent from SHL logo */
-    .accent {
+    .accent {   
         color: #7CCD32 !important;
     }
     
@@ -77,10 +76,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Add URL validation function
-def is_url(input_str):
-    url_pattern = r'^https?://\S+'
-    return re.match(url_pattern, input_str) is not None
 
 @st.cache_data
 def load_name_mapping():
@@ -158,22 +153,29 @@ def main():
         if is_url(user_input):
             with st.spinner("📥 Analyzing job description URL..."):
                 try:
-                    processed_query = get_job(user_input)
+                    url = extract_url(user_input)
+                    processed_url = get_job(url)   
+                    
                     st.session_state.conversation.append({
                         'role': 'user',
                         'content': user_input,
                         'avatar_style': 'micah'
                     })
-                    user_input = processed_query
+                    user_input = user_input + "\n" + processed_url
+                    st.session_state.conversation.append({
+                        'role': 'user',
+                        'content': 'Extracted JD:\n' + processed_url,
+                        'avatar_style': 'micah'
+                    })
                 except Exception as e:
                     st.error("⚠️ Failed to extract job description from URL. Kindly manually enter job description.")
-                
-            
-        st.session_state.conversation.append({
+        else:
+            st.session_state.conversation.append({
             'role': 'user',
             'content': user_input,
             'avatar_style': "micah"
-        })
+            })   
+            
         
         try:
             # API Call
@@ -219,7 +221,7 @@ def main():
                     # Create DataFrame with proper column handling
                     df = pd.DataFrame([{
                         "name": url_to_name.get(item.get('url', ''), "Unknown Assessment"),
-                        "duration": int(item.get('duration') or 0),
+                        "duration": str(item.get('duration')) or "N/A",
                         "test_type": ", ".join(
                             item.get('test_type', []) if isinstance(item.get('test_type', []), list)
                             else item.get('test_type', '').split(', ')
