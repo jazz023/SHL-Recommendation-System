@@ -130,7 +130,7 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/health", response_class=IndentedJSONResponse)
 async def health_check():
     return JSONResponse(
         content={"status": "healthy"},
@@ -138,7 +138,7 @@ async def health_check():
         media_type="application/json"
     )
 
-@app.post("/recommend")
+@app.post("/recommend", response_class=IndentedJSONResponse)
 async def recommend(request: RecommendationRequest):
     try:
         candidates = retrieve_from_qdrant(request.query, top_k=20)
