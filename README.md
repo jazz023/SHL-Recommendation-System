@@ -18,7 +18,8 @@ KEY HIGHLIGHTS:
 - Instant JSON export  
 - Dual input methods (text/URL).
 
-API Endpoint: https://shl-recommendation-system-fpr1.onrender.com
+API Endpoint: https://shl-recommendation-system-fpr1.onrender.com    
+(The Endpoint is hosted on a free instance of render.com which goes down with inactivity and takes upto a minute to come back up. So please wait some time on first query!)
 
 System Arhictecture Diagram:
 ![alt text](image-1.png)
